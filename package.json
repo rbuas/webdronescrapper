@@ -24,7 +24,7 @@
     "configs"
   ],
   "author": "Rodrigo Buas",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "bcrypt": "^0.8.7",
     "body-parser": "^1.15.1",
