@@ -1,0 +1,19 @@
+{
+    "USER_MAILFROM" : "contact@grbuas.com",
+    "USER_MAILCONFIRM_SUBJECT" : {
+        "PT" : "[RBUAS] Confirmação de email",
+        "FR" : "[RBUAS] Confirmation du mail",
+        "EN" : "[RBUAS] Email confirmation"
+    },
+    "USER_MAILCONFIRM_TITLE" : {},
+    "USER_MAILCONFIRM_PRETEXT" : {},
+    "USER_MAILCONFIRM_POSTEXT" : {},
+    "USER_RESETPASS_SUBJECT" : {
+        "PT" : "[RBUAS] Reiniciar senha",
+        "FR" : "[RBUAS] Réinitialiser mot de passe",
+        "EN" : "[RBUAS] Restart password"
+    },
+    "USER_RESETPASS_TITLE" : {},
+    "USER_RESETPASS_PRETEXT" : {},
+    "USER_RESETPASS_POSTEXT" : {}
+}
