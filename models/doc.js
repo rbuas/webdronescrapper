@@ -1,8 +1,6 @@
 var _mongoose = require("mongoose");
-var _bcrypt = require("bcrypt");
 var _moment = require("moment");
 var _querystring = require("querystring");
-var _crypto = require("crypto");
 
 var JsExt = require(ROOT_DIR + "/brain/jsext");
 var Log = require(ROOT_DIR + "/brain/log");
