@@ -1,0 +1,7 @@
+node_modules/*
+data/*
+tests/data/*
+mongodb/*
+static/styles/*
+static/scripts/*
+*.log
