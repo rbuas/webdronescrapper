@@ -1,5 +1,4 @@
 var _http = require("http");
-var _request = require("request");
 var _cheerio = require("cheerio");
 var _querystring = require("querystring");
 var _url = require("url");
