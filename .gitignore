@@ -5,3 +5,5 @@ mongodb/*
 static/styles/*
 static/scripts/*
 *.log
+stats/*
+*.stats

@@ -118,7 +118,7 @@ WebDroneScraper.prototype.request = function (options, callback) {
 WebDroneScraper.prototype.scrapWap = function (wap, config, callback) {
     var self = this;
     if(!wap || !config)
-        return;
+        return callback && callback(null, null);
 
     var loadcharge = config.loadcharge || 1;
     var statsid = wap.path;
@@ -138,6 +138,7 @@ WebDroneScraper.prototype.scrapWap = function (wap, config, callback) {
                 var newstats;
                 if(!err && data) {
                     newstats = stockStats(self, stats, wap, config, reqinfo, getScrapInfos(self, config, data));
+                    if(config.eachCallback) newstats = config.eachCallback(data, newstats);
                     if(newstats) sendUpdateStats(self, newstats);
                 }
 
@@ -165,7 +166,6 @@ WebDroneScraper.prototype.scrap = function (list, config) {
 
         var wap = list[l];
         self.scrapWap(wap, config, function(data, newstats) {
-            if(config.eachCallback) config.eachCallback(data, newstats);
             if(--pendding == 0 && config.endCallback) config.endCallback(data, newstats);
         });
     }
@@ -256,8 +256,7 @@ WebDroneScraper.prototype.linksfile = function (config) {
 
             var wapmap = [];
             for(var path in self.sitemap) {
-                if(!self.sitemap.hasOwnProperty(path))
-                    continue;
+                if(!self.sitemap.hasOwnProperty(path)) continue;
 
                 var wap = self.sitemap[path];
                 wap.path = path;
@@ -267,6 +266,7 @@ WebDroneScraper.prototype.linksfile = function (config) {
             if(wapmap.length == 0)
                 return System.callback(config.endCallback, ["empty map", info, null]);
 
+            console.log("SCRAPMAP : ", wapmap);
             return self.scrap(wapmap, config);
         }
     );

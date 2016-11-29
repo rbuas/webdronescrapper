@@ -29,7 +29,10 @@ Wap.TYPE = "PAGE";
 Wap.STATUS = {
     BLOCKED : "BLOCKED",
     PRIVATE : "PRIVATE",
-    PUBLIC : "PUBLIC"
+    PUBLIC : "PUBLIC",
+    ERROR : "ERROR",            //STATS
+    WARNING : "WARNING",        //STATS
+    OK : "OK"                   //STATS
 };
 Wap.STATE = {
     DRAFT : "DRAFT",            //DRAFT
