@@ -6,7 +6,7 @@
             "type": "node",
             "program": "${workspaceRoot}/node_modules/mocha/bin/_mocha",
             "stopOnEntry": false,
-            "args": ["webdrone.js", "--no-timeouts", "--colors", "--sitelink=preprod.travelski.tfy.premaccess.com"],
+            "args": ["webdrone.js", "--no-timeouts", "--colors", "--sitelink=preprod.locations.lastminute.tfy.premaccess.com"],
             "cwd": "${workspaceRoot}",
             "runtimeExecutable": null,
             "env": { "NODE_ENV": "production"}
