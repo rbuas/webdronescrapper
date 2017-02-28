@@ -95,7 +95,7 @@ describe("load.sitemap", function() {
                 //STATUS : OK (initial)
                 stats.status = Wap.STATUS.OK;
 
-                var canonicalParsed = _url.parse(stats.canonical);
+                var canonicalParsed = stats.canonical && _url.parse(stats.canonical);
 
                 //STATUS : WARNING
                 var warning = stats.loadDuration > 5000
