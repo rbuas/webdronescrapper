@@ -1,6 +1,3 @@
-var _expect = require("chai").expect;
-var _assert = require("chai").assert;
-var _should = require("chai").should();
 var _url = require("url");
 var _fs = require("fs");
 var _moment = require("moment");
@@ -10,13 +7,14 @@ var Log = require(ROOT_DIR + "/brain/log");
 var WebDroneScraper = require(ROOT_DIR + "/brain/webdronescraper");
 var Memory = require(ROOT_DIR + "/brain/memory");
 var Wap = require(ROOT_DIR + "/models/wap");
-global.PROCESSARGS = {};
+global.PROCESSARGS = null;
 
 function statsPage (data, stats) {
     Log.message("Stats: ", stats);
 }
 
 function getSitelink () {
+    if(!global.PROCESSARGS) getProcessParams();
     return PROCESSARGS["sitelink"];
 }
 
@@ -36,6 +34,7 @@ function saveStatsToFile (err, data, callback) {
 }
 
 function getProcessParams () {
+    global.PROCESSARGS = {};
     var args = process.argv.slice(2);
     args.forEach(function (val, index, array) {
         var argitem = val.replace("--", "");
@@ -48,78 +47,68 @@ function getProcessParams () {
     });
 }
 
-describe("load.sitemap", function() {
-    var m, wdc, sitelink;
+// get sitelink parameter
+var sitelink = getSitelink();
 
-    before(function(done) {
-        // get sitelink parameter
-        getProcessParams();
-        sitelink = getSitelink();
-        _expect(sitelink).to.be.ok;
+//start drone
+var wdc = new WebDroneScraper();
 
-        //start drone
-        wdc = new WebDroneScraper();
+//start drone memory
+var m = new Memory();
 
-        //start drone memory
-        m = new Memory({onconnect:done});
-    });
+//scrap crowler map
+wdc.linksfile({
+    mapfile : "/cms/crowlermap.json",
+    hostname : sitelink,
+    port : 80,
+    loadcharge : 5,
+    scrapCallback : function ($) { //READ PAGE
+        if(!$) return;
 
-    after(function(done) {
-        m.disconnect(done);
-    });
+        var titleinfo = $("h1");
+        var canonical = $("link[rel='canonical']");
+        var metadescription = $("meta[name='description']");
+        var gtm = $("#gtm");
+        return {
+            title : titleinfo.text(),
+            titleCount : titleinfo ? titleinfo.length : 0,
+            canonical : canonical.attr("href"),
+            metadescription : metadescription && metadescription.length > 0 && metadescription[0].attribs ? metadescription[0].attribs.content : null,
+            gtm : gtm.text()
+        };
+    },
+    eachCallback : function (stat, index, loadstats) { //TEST PAGE
+        if(!stat)
+            return stat;
 
-    it("filemap", function(done) {
-        wdc.linksfile({
-            mapfile : "/cms/crowlermap.json",
-            hostname : sitelink,
-            port : 80,
-            scrapCallback : function ($) { //READ PAGE
-                if(!$) return;
+        //STATUS : OK (initial)
+        stat.status = Wap.STATUS.OK;
 
-                var titleinfo = $("h1");
-                var canonical = $("link[rel='canonical']");
-                var metadescription = $("meta[name='description']");
-                var gtm = $("#gtm");
-                return {
-                    title : titleinfo.text(),
-                    titleCount : titleinfo ? titleinfo.length : 0,
-                    canonical : canonical.attr("href"),
-                    metadescription : metadescription && metadescription.length > 0 && metadescription[0].attribs ? metadescription[0].attribs.content : null,
-                    gtm : gtm.text()
-                };
-            },
-            eachCallback : function (data, stats) { //TEST PAGE
-                if(!data || !stats)
-                    return stats;
+        var canonicalParsed = stat.canonical && _url.parse(stat.canonical);
 
-                //STATUS : OK (initial)
-                stats.status = Wap.STATUS.OK;
+        //STATUS : WARNING
+        var warning = stat.loadDuration > 5000
+                        //|| !stat.gtm
+                        || stat.contentLength > 500000;
+        if(warning) stat.status = Wap.STATUS.WARNING;
 
-                var canonicalParsed = stats.canonical && _url.parse(stats.canonical);
+        //STATUS : ERROR
+        var error = stat.statusCode != 200
+                        || !stat.metadescription
+                        || !stat.canonical
+                        || !canonicalParsed
+                        || canonicalParsed.path != stat.path;
 
-                //STATUS : WARNING
-                var warning = stats.loadDuration > 5000
-                                //|| !stats.gtm
-                                || stats.contentLength > 500000;
-                if(warning) stats.status = Wap.STATUS.WARNING;
+        if(error) stat.status = Wap.STATUS.ERROR; 
 
-                //STATUS : ERROR
-                var error = stats.statusCode != 200
-                                || !stats.metadescription
-                                || !stats.canonical
-                                || !canonicalParsed
-                                || canonicalParsed.path != stats.path;
-                if(error) stats.status = Wap.STATUS.ERROR; 
-                
-                _expect(error).to.be.equal(false);
-
-                return stats;
-            },
-            endCallback : function (data, stats) {
-                Wap.GetStats({}, function (err, stats) {
-                    saveStatsToFile(err, stats, done);
-                });
-            }
+        return stat;
+    },
+    endCallback : function (stats) {
+        Wap.GetStats({}, function (err, stats) {
+            saveStatsToFile(err, stats, function() {
+                m.disconnect();
+            });
         });
-    });
+
+    }
 });

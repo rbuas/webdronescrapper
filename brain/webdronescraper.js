@@ -137,12 +137,16 @@ WebDroneScraper.prototype.scrapWap = function (wap, config, callback) {
             function(err, reqinfo, data) {
                 var newstats;
                 if(!err && data) {
-                    newstats = stockStats(self, stats, wap, config, reqinfo, getScrapInfos(self, config, data));
-                    if(config.eachCallback) newstats = config.eachCallback(data, newstats);
-                    if(newstats) sendUpdateStats(self, newstats);
+                    var scrapinfo = getScrapInfos(config, data);
+                    newstats = buildStats(stats, wap, config, reqinfo, scrapinfo, loadcharge);
+                    stockStats(newstats, function(err, savedStats) {
+                        var savedStatsInfo = savedStats && savedStats._doc;
+                        sendUpdateStats(config, savedStatsInfo);
+                        if(--pendding == 0 && callback) callback(savedStatsInfo);
+                    });
+                } else { 
+                    if(--pendding == 0 && callback) callback(newstats);
                 }
-
-                if(--pendding == 0 && callback) callback(data, newstats);
             }
         );
     }
@@ -292,7 +296,7 @@ function generatStatsId (link, config) {
     return (protocol ? protocol + "//" : "") + host + (port ? ":" + port : "") + path;
 }
 
-function stockStats (self, stats, wap, config, info, scrapinfo) {
+function buildStats (stats, wap, config, info, scrapinfo, chargecount) {
     if(!stats) {
         Log.error("Missing stats object to stock info into it");
         return false;
@@ -319,23 +323,43 @@ function stockStats (self, stats, wap, config, info, scrapinfo) {
         });
     }
 
+    if(stats.load.length == 0) {
+        newstats.firstDuration = newstats.loadDuration;
+    }
     stats.load.push(newstats);
-    Wap.StockStats(newstats, function(err, savedStats) {
-        console.log("stockStats : ", savedStats);
-    });
+    if(chargecount == stats.load.length)
+        newstats = calculateAvarages(newstats, stats);
+
+    if(config.eachCallback) newstats = config.eachCallback(newstats, stats.load.length - 1, stats);
     return newstats;
 }
 
-function sendUpdateStats (self, newstats) {
-    if(!self) {
-        Log.error("Missing main object");
-        return;
-    }
-    if(self.updateStats) self.updateStats(newstats, self.stats);
+function calculateAvarages (stats, loadstats) {
+    if(!stats || !loadstats || !loadstats.load || loadstats.load.length <= 1)
+        return stats;
+
+    var sumDuration = loadstats.load.reduce(function(tot, stat) {
+        tot += stat.loadDuration;
+        return tot;
+    }, 0);
+    stats.loadDuration = sumDuration / loadstats.load.length;
+    return stats;
 }
 
-function getScrapInfos (self, config, data) {
-    if(!self || !config || !data)
+function stockStats (stats, callback) {                    
+    Wap.StockStats(stats, callback);
+}
+
+function sendUpdateStats (config, newstats) {
+    if(!config) {
+        Log.error("Missing config object");
+        return;
+    }
+    if(config.updateStats) config.updateStats(newstats);
+}
+
+function getScrapInfos (config, data) {
+    if(!config || !data)
         return;
 
     var $ = _cheerio.load(data);
